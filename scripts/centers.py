@@ -24,7 +24,7 @@ def getpoints(clist):
     return points
 
 if __name__ == "__main__":
-    from ROOT import gROOT, TCanvas, TH1F, TF1, gStyle
+    from ROOT import gROOT, TCanvas, TH1F, TF1, gStyle, TLatex
     gROOT.Reset()
 
     clistA = [
@@ -80,10 +80,10 @@ if __name__ == "__main__":
     pointsA = getpoints(clistA)
     pointsI = getpoints(clistI)
 
-    histogramAx = TH1F.TH1F('AmpResX', 'Spatial resolution x-axis (Amp); x residuals [mm]', 50, -5, 5)
-    histogramAy = TH1F.TH1F('AmpResY', 'Spatial resolution y-axis (Amp); y residuals [mm]', 50, -5, 5)
-    histogramIx = TH1F.TH1F('IntResX', 'Spatial resolution x-axis (Int); x residuals [mm]', 50, -5, 5)
-    histogramIy = TH1F.TH1F('IntResY', 'Spatial resolution y-axis (Int); y residuals [mm]', 50, -5, 5)
+    histogramAx = TH1F.TH1F('AmpResX', '; X residuals [mm]; Entries / 0.4 mm', 25, -5, 5)
+    histogramAy = TH1F.TH1F('AmpResY', '; Y residuals [mm]; Entries / 0.4 mm', 25, -5, 5)
+    histogramIx = TH1F.TH1F('IntResX', '; X residuals [mm]; Entries / 0.4 mm', 25, -5, 5)
+    histogramIy = TH1F.TH1F('IntResY', '; Y residuals [mm]; Entries / 0.2 mm', 40, -4, 4)
 
     for p in pointsA:
         histogramAx.Fill(p[0])
@@ -93,33 +93,55 @@ if __name__ == "__main__":
         histogramIx.Fill(p[0])
         histogramIy.Fill(p[1])
 
-    c1 = TCanvas('c1', 'c1', 200, 10, 800, 600)
+    c1 = TCanvas('c1', 'c1', 200, 10, 800, 700)
+    c1.SetHighLightColor(2);
+    c1.SetFillColor(0);
+    c1.SetBorderMode(0);
+    c1.SetBorderSize(2);
+    c1.SetLeftMargin(0.12);
+    c1.SetRightMargin(0.05);
+    c1.SetTopMargin(0.07);
+    c1.SetBottomMargin(0.12);
+    c1.SetFrameBorderMode(0);
+    c1.SetFrameBorderMode(0);
 
-    gStyle.SetOptFit(10)
+    gStyle.SetOptFit(0)
+    gStyle.SetOptStat(0)
 
-    gaussian = TF1.TF1("spaceres", "gaus", -1.75, 1.75);
+    tex = TLatex.TLatex()
+    tex.SetTextSize(0.06);
+    gaussian1 = TF1.TF1("spaceres", "gaus", -1.75, 1.75);
+    # gaussian2 = TF1.TF1("spaceres", "gaus", -2, 2);
+    # gaussian3 = TF1.TF1("spaceres", "gaus", -0.75, 0.75);
 
-    # gaussian.SetParameters(histogramAx.GetEntries()/3, histogramAx.GetMean(), histogramAx.GetRMS())
-    # histogramAx.Fit(gaussian, "MQR")
+    # gaussian3.SetParameters(histogramAx.GetEntries()/3, histogramAx.GetMean(), histogramAx.GetRMS())
+    # histogramAx.Fit(gaussian3, "MQR")
     # histogramAx.Draw()
-    # c1.SaveAs("outputs/residualsAx2.gif")
-    # c1.SaveAs("outputs/residualsAx2.pdf")
 
-    gaussian.SetParameters(histogramAy.GetEntries()/3, histogramAy.GetMean(), histogramAy.GetRMS())
-    histogramAy.Fit(gaussian, "LMQR")
-    histogramAy.Draw()
-    c1.SaveAs("outputs/residualsAy2.gif")
-    c1.SaveAs("outputs/residualsAy2.pdf")
+    # c1.SaveAs("outputs/residualsAx.gif")
+    # c1.SaveAs("outputs/residualsAx.pdf")
 
-    # gaussian.SetParameters(histogramIx.GetEntries()/3, histogramIx.GetMean(), histogramIx.GetRMS())
-    # histogramIx.Fit(gaussian, "MQR")
+    # gaussian2.SetParameters(histogramAy.GetEntries()/3, histogramAy.GetMean(), histogramAy.GetRMS())
+    # histogramAy.Fit(gaussian2, "LMQR")
+    # histogramAy.Draw()
+    # c1.SaveAs("outputs/residualsAy.gif")
+    # c1.SaveAs("outputs/residualsAy.pdf")
+
+    # gaussian3.SetParameters(histogramIx.GetEntries()/3, histogramIx.GetMean(), histogramIx.GetRMS())
+    # histogramIx.Fit(gaussian3, "MQR")
     # histogramIx.Draw()
-    # c1.SaveAs("outputs/residualsIx2.gif")
-    # c1.SaveAs("outputs/residualsIx2.pdf")
+    # c1.SaveAs("outputs/residualsIx.gif")
+    # c1.SaveAs("outputs/residualsIx.pdf")
 
-    gaussian.SetParameters(histogramIx.GetEntries()/3, histogramIx.GetMean(), histogramIx.GetRMS())
-    histogramIy.Fit(gaussian, "LMQR")
+    gaussian1.SetParameters(histogramIx.GetEntries()/3, histogramIx.GetMean(), histogramIx.GetRMS())
+    histogramIy.Fit(gaussian1, "LMQR")
+    histogramIy.GetXaxis().SetTitleSize(0.06);
+    histogramIy.GetYaxis().SetTitleSize(0.06);
+    histogramIy.GetXaxis().SetTitleOffset(.8);
+    histogramIy.GetYaxis().SetTitleOffset(.8);
+
     histogramIy.Draw()
-    c1.SaveAs("outputs/residualsIy2.gif")
-    c1.SaveAs("outputs/residualsIy2.pdf")
+    tex.DrawLatexNDC(.65, .80, "#sigma: %2.1f mm" % gaussian1.GetParameter(2))
+    c1.SaveAs("outputs/residualsIy.gif")
+    c1.SaveAs("outputs/residualsIy.pdf")
  

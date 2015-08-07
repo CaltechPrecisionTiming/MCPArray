@@ -9,6 +9,8 @@
 #include "TF1.h"
 #include "TStyle.h"
 
+#define NOOUTPUT
+
 #define NSAMPLES 1024
 #define NROWS 4
 #define NCOLS 4
@@ -88,8 +90,11 @@ int main (int argc, char **argv) {
     tree->SetBranchAddress("QualityBit", &QualityBit);
 
     /******************************* HISTOGRAMS *******************************/
-    gStyle->SetOptFit(10); // only fit parameters
-    gStyle->SetOptStat(11);
+    // only fit parameters
+    //gStyle->SetOptFit(10);
+    //gStyle->SetOptStat(11);
+    gStyle->SetOptFit(0);
+    gStyle->SetOptStat(0);
 
     // Make a histogram for each pixel to calculate above variables
     TH1F *Amp[NROWS][NCOLS];
@@ -114,11 +119,11 @@ int main (int argc, char **argv) {
                                      (NCOLS-1) * 2 * PIXLEN, 0, PIXLEN * (NCOLS - 1));
 
     // Weighted Delta t
-    TH1F *DtWA = new TH1F("Dt_Amp_Weight", "; #Delta t [ns]; Number of Events", 30, -4.5, -3);
-    TH1F *DtWI = new TH1F("Dt_Int_Weight", "; #Delta t [ns]; Number of Events", 30, -4.5, -3);
+    TH1F *DtWA = new TH1F("Dt_Amp_Weight", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
+    TH1F *DtWI = new TH1F("Dt_Int_Weight", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
     // Highest amplitude/integral Delta t
-    TH1F *DtHA = new TH1F("Dt_HI_Amp", "; #Delta t [ns]; Number of Events", 30, -4.5, -3);
-    TH1F *DtHI = new TH1F("Dt_HI_Int", "; #Delta t [ns]; Number of Events", 30, -4.5, -3);
+    TH1F *DtHA = new TH1F("Dt_HI_Amp", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
+    TH1F *DtHI = new TH1F("Dt_HI_Int", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
 
     /**************************** LOOP OVER EVENTS ****************************/
 
@@ -175,17 +180,22 @@ int main (int argc, char **argv) {
         // Fill the beam-center-coordinate histograms
         float coords[2] = {0, 0};
         center(amplitude, coords, QualityBit);
+        if (coords[0] != 9. && coords[1] != 15.)
         AmplitudeCenter->Fill(coords[0], coords[1]);
         center(integral, coords, QualityBit);
+        if (coords[0] != 9. && coords[1] != 15.)
         IntegralCenter->Fill(coords[0], coords[1]);
 
         // Fill weighted Delta t measurement
-        DtWA->Fill(tot_dtA / sumA);
-        DtWI->Fill(tot_dtI / sumI);
-
+        if (sumA) {
+            DtWA->Fill(tot_dtA / sumA);
+            DtWI->Fill(tot_dtI / sumI);
+        }
         // Fill highest intensity Delta t measurement
-        DtHA->Fill(timeA);
-        DtHI->Fill(timeI);
+        if (highA) {
+            DtHA->Fill(timeA);
+            DtHI->Fill(timeI);
+        }
     }
 
     /****************************** SAVE RESULTS ******************************/
@@ -237,6 +247,9 @@ int main (int argc, char **argv) {
     DtHI->Write();
 
     delete gaussian;
+
+// Omit Saving with NOOUTPUT FLAG
+#ifndef NOOUTPUT
 
     // Set up canvas
     TCanvas *c = new TCanvas("c", "c", 800, 600);
@@ -328,7 +341,7 @@ int main (int argc, char **argv) {
     delete IntegralVsPixelGraph;
 
     /********************************** Sigma Delta t **********************************/
-    TH2F *SigmaTVsPixelGraph = new TH2F("AmplitudeVsPixel","; X Axis [mm]; Y Axis [mm]",\
+    TH2F *SigmaTVsPixelGraph = new TH2F("Time ResolutionVsPixel","; X Axis [mm]; Y Axis [mm]",\
                                         NROWS, 0, NROWS*PIXLEN, NCOLS, 0, NCOLS*PIXLEN);
     for (int i = 1; i <= NROWS; i++)
         SigmaTVsPixelGraph->GetYaxis()->SetBinLabel(i, "");
@@ -355,6 +368,15 @@ int main (int argc, char **argv) {
     /***********************************************************************************/
     
     delete c;
+
+#else
+
+    delete AmplitudeCenter, IntegralCenter;
+    delete DtWA, DtWI;
+    delete DtHA, DtHI;
+
+#endif
+
     out->Close();
     inputfile->Close();
     delete out, inputfile;

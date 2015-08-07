@@ -111,7 +111,7 @@ int main (int argc, char **argv) {
         Int->Fit(gaussianI, "LMNQR");
         
         // Output everything to the CSV file
-        std::string strname(argv[i]);
+        string strname(argv[i]);
         int beg = strname.rfind("/") + 1;
 
         outfile << strname.substr(beg) << ", "

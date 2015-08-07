@@ -4,6 +4,8 @@
 #include "TH2F.h"
 #include "TCanvas.h"
 
+#define NOOUTPUT
+
 #define NROWS 4
 #define NCOLS 4
 
@@ -15,6 +17,9 @@
 #define ENDx 4
 #define ENDy 3
 
+/*
+ * This application saves the time to amp/int distribution for each pixel and root file
+ */
 
 int main (int argc, char **argv) {
     // Read parameters and open input file
@@ -30,7 +35,7 @@ int main (int argc, char **argv) {
     }
     // terminate if arguments are not correct
     else {
-        std::cout << "usage: pixel_analysis inputfile.root outputname" << std::endl;
+        std::cout << "usage: distribution inputfile.root outputname.root" << std::endl;
         return 0;
     }
 
@@ -63,7 +68,7 @@ int main (int argc, char **argv) {
                                    "; Amplitude [V]; #Delta t [ns]", 50, 0, .5, 50, -4.5, -3);
 
             ints[a][b] = new TH2F(("t_int_" + std::to_string(a) + std::to_string(b)).c_str(),
-                                   "; Integral [psV]; #Delta t [ns]", 50, 0, 2.5, 50, -4.5, -3);
+                                   "; Integral [psV]; #Delta t [ns]", 50, 0, 500, 50, -4.5, -3);
         }
 
     long nentries = tree->GetEntries();
@@ -78,7 +83,7 @@ int main (int argc, char **argv) {
                     for (int b = STARTx; b < ENDx; b++)
                         if (!(QualityBit[a][b])) {
                             amps[a][b]->Fill(amplitude[a][b], time_gausfit[a][b] - time_gausfit[a][0]);
-                            ints[a][b]->Fill(integral[a][b], time_gausfit[a][b] - time_gausfit[a][0]);
+                            ints[a][b]->Fill(200*integral[a][b], time_gausfit[a][b] - time_gausfit[a][0]);
             }
 
     }
@@ -94,13 +99,18 @@ int main (int argc, char **argv) {
             amps[a][b]->Write();
             ints[a][b]->Write();
 
+#ifndef NOOUTPUT
+
             amps[a][b]->Draw("colztext");
             c->SaveAs((outprefix + "_amp_" + std::to_string(a) + std::to_string(b) + ".gif").c_str());
+            // c->SaveAs((outprefix + "_amp_" + std::to_string(a) + std::to_string(b) + ".pdf").c_str());
             c->Clear();
             ints[a][b]->Draw("colztext");
             c->SaveAs((outprefix + "_int_" + std::to_string(a) + std::to_string(b) + ".gif").c_str());
+            // c->SaveAs((outprefix + "_int_" + std::to_string(a) + std::to_string(b) + ".pdf").c_str());
             c->SaveAs();
             c->Clear();
+#endif
 
             delete amps[a][b], ints[a][b];
     }

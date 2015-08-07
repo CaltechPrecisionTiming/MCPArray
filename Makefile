@@ -35,8 +35,22 @@ TARGET5 = distribution
 SRC5 = distribution.cc
 OBJ5 = $(SRC5:.cc=.o)
 
+# correction
+TARGET6 = correction
+SRC6 = correction.cc
+OBJ6 = $(SRC6:.cc=.o)
 
-all : $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5)
+# calibration
+TARGET7 = calibration
+SRC7 = calibration.cc
+OBJ7 = $(SRC7:.cc=.o)
+
+# make plot
+TARGET8 = makePlot
+SRC8 = scripts/makePlot.cc
+OBJ8 = $(SRC8:.cc=.o)
+
+all : $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8)
 
 
 $(TARGET1) : $(OBJ1)
@@ -69,10 +83,28 @@ $(TARGET5) : $(OBJ5)
 	@echo $<
 	@echo $^
 
+$(TARGET6) : $(OBJ6)
+	$(LD) $(CPPFLAGS) -o $(TARGET6) $(OBJ6) $(LDFLAGS)
+	@echo $@
+	@echo $<
+	@echo $^
+
+$(TARGET7) : $(OBJ7)
+	$(LD) $(CPPFLAGS) -o $(TARGET7) $(OBJ7) $(LDFLAGS)
+	@echo $@
+	@echo $<
+	@echo $^
+
+$(TARGET8) : $(OBJ8)
+	$(LD) $(CPPFLAGS) -o $(TARGET8) $(OBJ8) $(LDFLAGS)
+	@echo $@
+	@echo $<
+	@echo $^
+
 %.o : %.cc
 	$(CXX) $(CPPFLAGS) -o $@ -c $<
 	@echo $@
 	@echo $<
 
 clean :
-	rm -f *.o src/*.o $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) *~
+	rm -f *.o src/*.o $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8) *~

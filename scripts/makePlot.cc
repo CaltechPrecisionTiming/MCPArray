@@ -82,8 +82,8 @@ int main (int argc, char **argv) {
     g2->SetMarkerColor(kOrange-3);
     g1->SetLineColor(kAzure);
     g1->SetMarkerColor(kAzure);
-    g2->SetMarkerStyle(kFullDotLarge);
-    g1->SetMarkerStyle(kFullDotLarge);
+    g2->SetMarkerStyle(kFullSquare);
+    g1->SetMarkerStyle(kFullCircle);
     g2->SetMarkerSize(1.5);
     g1->SetMarkerSize(1.5);
     g1->SetLineWidth(2.);
@@ -91,6 +91,7 @@ int main (int argc, char **argv) {
     
     TLegend *leg = new TLegend(0.25, 0.2, 0.75, 0.4, NULL, "brNDC");
     leg->SetLineColor(kWhite);
+    leg->SetFillColor(kWhite);
     leg->SetTextSize(0.04);
     leg->AddEntry(g1, "Weighted Energy Calculation", "lep");
     leg->AddEntry(g2, "Highest Energy Calculation", "lep");
