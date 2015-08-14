@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include "TFile.h"
 #include "TTree.h"
@@ -178,23 +177,24 @@ int main (int argc, char **argv) {
             }
 
         // Fill the beam-center-coordinate histograms
+        // Fill weighted Delta t measurement
+        // Fill highest intensity Delta t measurement
         float coords[2] = {0, 0};
         center(amplitude, coords, QualityBit);
-        if (coords[0] != 9. && coords[1] != 15.)
-        AmplitudeCenter->Fill(coords[0], coords[1]);
-        center(integral, coords, QualityBit);
-        if (coords[0] != 9. && coords[1] != 15.)
-        IntegralCenter->Fill(coords[0], coords[1]);
-
-        // Fill weighted Delta t measurement
-        if (sumA) {
-            DtWA->Fill(tot_dtA / sumA);
-            DtWI->Fill(tot_dtI / sumI);
+        if (coords[0] != 9. && coords[1] != 15.) {
+            AmplitudeCenter->Fill(coords[0], coords[1]);
+            if (sumA)
+                DtWA->Fill(tot_dtA / sumA);
+            if (highA)
+                DtHA->Fill(timeA);
         }
-        // Fill highest intensity Delta t measurement
-        if (highA) {
-            DtHA->Fill(timeA);
-            DtHI->Fill(timeI);
+        center(integral, coords, QualityBit);
+        if (coords[0] != 9. && coords[1] != 15.) {
+            IntegralCenter->Fill(coords[0], coords[1]);
+            if (sumI)
+                DtWI->Fill(tot_dtI / sumI);
+            if (highI)
+                DtHI->Fill(timeI);
         }
     }
 

@@ -67,11 +67,11 @@ void TimeResolution( TString _rootFileName = "", bool weight = true, TString out
     //-------------------------------------------
     // g e t t i n g   c o r r e c t   h i s t o
     //-------------------------------------------
-    TH1F* h;
+    TH1F *h;
     if (weight)
-        h = (TH1F*) f->Get("Dt_Int_Weight");
+        h = (TH1F *) f->Get("Dt_Int_Weight");
     else
-        h = (TH1F*)f->Get("Dt_HI_Int");
+        h = (TH1F *)f->Get("Dt_HI_Int");
     // TH1F* h = (TH1F*)f->Get(Form("Dt_%d%d", ));
     // TH1F* h = (TH1F*)f->Get(Form("DtI_%d%d", ));
 
@@ -392,35 +392,27 @@ void ExIntegral(TString outName = "default") {
     c1->SetHighLightColor(2);
     c1->SetFillColor(0);
     c1->SetBorderMode(0);
-    c1->SetBorderSize(2);
-    c1->SetLeftMargin(leftMargin);
+    // c1->SetBorderSize(2);
+    // c1->SetLeftMargin(leftMargin);
     c1->SetRightMargin(rightMargin2D+.01);
-    c1->SetTopMargin(topMargin);
-    c1->SetBottomMargin(bottomMargin);
+    // c1->SetTopMargin(topMargin);
+    // c1->SetBottomMargin(bottomMargin);
     c1->SetFrameBorderMode(0);
     c1->SetFrameBorderMode(0);
 
-    TH2F *h = new TH2F("IntegralVsPixel","; X Axis; Y Axis",\
+    TH2F *h = new TH2F("IntegralVsPixel","Mean Charge Distribution;;",\
                                           3, 0, 3, 3, 0, 3);
     for (int i = 1; i <= 3; i++)
-        h->GetYaxis()->SetBinLabel(i, Form("#scale[2.]{Row %d}", i));
+        h->GetYaxis()->SetBinLabel(i, "");//Form("#scale[2.]{Row %d}", i));
     for (int i = 1; i <= 3; i++)
-        h->GetXaxis()->SetBinLabel(i, Form("#scale[2.]{Col %d}", i));
-
-    // gStyle->SetPalette(57);
-    // gStyle->SetPalette(63);
-    // gStyle->SetPalette(70);
-    // gStyle->SetPalette(100);
+        h->GetXaxis()->SetBinLabel(i, "");//Form("#scale[2.]{Col %d}", i));
 
     h->SetMarkerSize(3);
     h->SetMarkerColor(kWhite);
 
     h->SetStats(0);
-    h->SetTitle("");
-    h->GetYaxis()->SetTitle("");
     h->GetXaxis()->SetTitleSize(axisTitleSize);
     h->GetXaxis()->SetTitleOffset(axisTitleOffset);
-    h->GetXaxis()->SetTitle("");
     h->GetYaxis()->SetTitleSize(axisTitleSize);
     h->GetYaxis()->SetTitleOffset(axisTitleOffset);
     h->GetZaxis()->SetTitle("Charge [fC]");
@@ -430,17 +422,35 @@ void ExIntegral(TString outName = "default") {
     h->SetBinContent(1, 3, round(43.7555 * 20.));
     h->SetBinContent(2, 3, round(129.888 * 20.));
     h->SetBinContent(3, 3, round(44.3214 * 20.));
-    h->SetBinContent(1, 2, round(1.14947 * 20.));
+    h->SetBinContent(1, 2, 0);//round(1.14947 * 20.));
     h->SetBinContent(2, 2, round(241.857 * 20.));
     h->SetBinContent(3, 2, round(61.356  * 20.));
     h->SetBinContent(1, 1, round(42.402  * 20.));
     h->SetBinContent(2, 1, round(70.9921 * 20.));
     h->SetBinContent(3, 1, round(31.8931 * 20.));
 
-
     h->Draw("colztext");
-    gPad->Update();
 
+    TBox *b = new TBox();
+    b->SetFillColor(12);
+    b->SetFillStyle(3144);
+    b->DrawBox(h->GetXaxis()->GetBinCenter(1)-.5,
+               h->GetXaxis()->GetBinCenter(2)-.5,
+               h->GetXaxis()->GetBinCenter(1)+.5,
+               h->GetXaxis()->GetBinCenter(2)+.5
+               );
+    
+    TLatex *tex = new TLatex();
+    tex->SetTextColor(kWhite);
+    tex->SetTextFont(font);
+    tex->SetTextSize(0.045);
+    for (int a = 1; a < 4; a++)
+        for (int b = 1; b < 4; b++)
+            tex->DrawLatex(h->GetXaxis()->GetBinCenter(a)-.3,
+                           h->GetXaxis()->GetBinCenter(b)-.4,
+                           Form("#it{Pixel %d%d}", a+3, b+2));
+
+    gPad->Update();
     c1->SaveAs( outName + ".pdf" );
     // c1->SaveAs( outName + ".C" );
     return;
@@ -508,3 +518,55 @@ void MakePulses(unsigned int chnly, unsigned int chnlx, unsigned int event,
     return;
 }
 
+void ConstTerm( TString outName = "default" ) {
+    TCanvas *c = new TCanvas( "c", "c", 2119, 33, 800, 700 );
+    c->SetHighLightColor(2);
+    c->SetFillColor(0);
+    c->SetBorderMode(0);
+    c->SetBorderSize(2);
+    c->SetLeftMargin(leftMargin);
+    c->SetRightMargin(rightMargin);
+    c->SetTopMargin(topMargin);
+    c->SetBottomMargin(bottomMargin);
+    c->SetFrameBorderMode(0);
+    c->SetFrameBorderMode(0);
+
+    TH1F *h = new TH1F("const_term", "", 10, -8, 32);
+
+    h->Fill(15.3);    h->Fill(16.5);    h->Fill(12.6);    h->Fill(10.9);
+    h->Fill(12.4);    h->Fill(11.6);    h->Fill( 4.6);    h->Fill(10.9);
+    h->Fill( 6.7);    h->Fill( 4.4);    h->Fill( 5.4);    h->Fill(11.3);
+    h->Fill( 5.0);    h->Fill( 5.5);    h->Fill( 7.3);    h->Fill( 8.7);
+    h->Fill( 9.6);    h->Fill(15.4);    h->Fill(11.6);    h->Fill( 3.8);
+    h->Fill( 7.5);    h->Fill( 7.7);
+
+    gStyle->SetOptStat(0);
+    gStyle->SetOptFit(10);
+    //h->SetStats(0);
+    h->GetYaxis()->SetTitle(Form("Entries / %2.2f ps", h->GetBinWidth(1)));
+    h->GetXaxis()->SetTitle("Fit Constant Term [ps]");
+    h->GetXaxis()->SetTitleSize(axisTitleSize);
+    h->GetXaxis()->SetTitleOffset(axisTitleOffset);
+    h->GetYaxis()->SetTitleSize(axisTitleSize);
+    h->GetYaxis()->SetTitleOffset(axisTitleOffset);
+
+    TF1 *gaussian = new TF1("const", "gaus", 2, 18);
+    h->Fit(gaussian, "LMQR");
+    h->Draw();
+
+/*
+    TString extraText = Form("#sigma = %d ps", (int) (1000*h->GetFunction(FNAME)->GetParameter(2)));
+    TLatex latex;
+    latex.SetNDC();
+    latex.SetTextAngle(0);
+    latex.SetTextColor(kBlack);
+    latex.SetTextFont(font);
+    latex.SetTextAlign(31);
+    latex.SetTextSize(fontSize);
+    latex.DrawLatex(text_x, text_y, extraText);
+*/
+    c->SaveAs( outName + ".pdf" );
+    // c->SaveAs( outName + ".C" );
+
+    return;
+}

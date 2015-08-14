@@ -8,7 +8,7 @@ CPPFLAGS := $(shell root-config --cflags) -I$(INC)/include -I$(ROOTINC)/math/mat
 LDFLAGS := $(shell root-config --glibs) $(STDLIBDIR) -lMathMore
 
 # Debugging Flag
-#CPPFLAGS += -g
+CPPFLAGS += -g
 
 # Raw pulse analysis application
 TARGET1 = analyze_t1065
@@ -45,12 +45,25 @@ TARGET7 = calibration
 SRC7 = calibration.cc
 OBJ7 = $(SRC7:.cc=.o)
 
-# make plot
+# make plot for time resolution
 TARGET8 = makePlot
 SRC8 = scripts/makePlot.cc
 OBJ8 = $(SRC8:.cc=.o)
 
-all : $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8)
+# weighting analysis
+TARGET9 = weighting
+SRC9 = weighting.cc
+OBJ9 = $(SRC9:.cc=.o)
+
+# make plot for calibrated resolution
+TARGET10 = makePlot2
+SRC10 = scripts/makePlot2.cc
+OBJ10 = $(SRC10:.cc=.o)
+
+
+
+
+all : $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8) $(TARGET9) $(TARGET10)
 
 
 $(TARGET1) : $(OBJ1)
@@ -101,10 +114,22 @@ $(TARGET8) : $(OBJ8)
 	@echo $<
 	@echo $^
 
+$(TARGET9) : $(OBJ9)
+	$(LD) $(CPPFLAGS) -o $(TARGET9) $(OBJ9) $(LDFLAGS)
+	@echo $@
+	@echo $<
+	@echo $^
+
+$(TARGET10) : $(OBJ10)
+	$(LD) $(CPPFLAGS) -o $(TARGET10) $(OBJ10) $(LDFLAGS)
+	@echo $@
+	@echo $<
+	@echo $^
+
 %.o : %.cc
 	$(CXX) $(CPPFLAGS) -o $@ -c $<
 	@echo $@
 	@echo $<
 
 clean :
-	rm -f *.o src/*.o $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8) *~
+	rm -f *.o src/*.o $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8) $(TARGET9) $(TARGET10) *~

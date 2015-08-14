@@ -34,3 +34,21 @@ Fits gaussians to each histogram in the root files created above, and saves mean
 and sigma x, y values etc for each run in both a csv spreadsheet beam.csv and a
 root file beam.root.
 
+Others:
+distribution saves the amplitude/integral by delta t relation for each pixle
+into a root file
+
+correction works similarly but also performs a self-calibration
+
+calibration is also similar but allows the calibration of one run using another
+
+the makeResolution macro has may functions to make various plots for the paper
+
+the makePlot and makePlot2 scripts create a scatter plot for the highest
+energy pixel time stamp and weighted time stamp, and calibrated vs
+self-calibrated time stamp respectively. They have to be provided a list of
+files in the command line argument.
+
+npxels.sh : calls weighting
+Makes a plot of all the time resolution by the number of pixels used in the
+weighted average.
