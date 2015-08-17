@@ -24,15 +24,20 @@ using namespace std;
  */
 int main (int argc, char **argv) {
     if (argc < 3)
-        cout << "usage: get_properties outfilename {infiles.root}" << endl;
+        cout << "usage: makePlot outfilename {infiles.root}" << endl;
 
     int nentries = argc - 2;
     float *run    = new float[nentries];
-    float *tresW  = new float[nentries];
-    float *tresH  = new float[nentries];
     float *unctX  = new float[nentries];
+
+    float *tresW  = new float[nentries];
     float *unctyW = new float[nentries];
+    
+    float *tresH  = new float[nentries];
     float *unctyH = new float[nentries];
+
+    float *tresA  = new float[nentries];
+    float *unctyA = new float[nentries];
 
     // Loop over all files and fit to their histograms
     for (int i = 2; i < argc; i++) {
@@ -41,13 +46,16 @@ int main (int argc, char **argv) {
         TFile *infile = TFile::Open(argv[i], "READ");
         TH1F *weight = (TH1F *) infile->Get("Dt_Int_Weight");
         TH1F *high = (TH1F *) infile->Get("Dt_HI_Int");
+        TH1F *average = (TH1F *) infile->Get("Dt_Average");
 
         cout <<
         (run[i-2] = i-1) << " " <<
         (tresW[i-2] = 1000 * weight->GetFunction(FNNAME)->GetParameter(2)) << " " <<
-        (tresH[i-2] = 1000 * high->GetFunction(FNNAME)->GetParameter(2)) << " " <<
         (unctyW[i-2] = 1000 * weight->GetFunction(FNNAME)->GetParError(2)) << " " <<
-        (unctyH[i-2] = 1000 * high->GetFunction(FNNAME)->GetParError(2)) << endl;
+        (tresH[i-2] = 1000 * high->GetFunction(FNNAME)->GetParameter(2)) << " " <<
+        (unctyH[i-2] = 1000 * high->GetFunction(FNNAME)->GetParError(2)) << " " <<
+        (tresA[i-2] = 1000 * average->GetFunction(FNNAME)->GetParameter(2)) << " " <<
+        (unctyA[i-2] = 1000 * average->GetFunction(FNNAME)->GetParError(2)) << endl;
         unctX[i-2] = 0.0;
         
         infile->Close();
@@ -56,6 +64,7 @@ int main (int argc, char **argv) {
 
     TGraphErrors *g1 = new TGraphErrors(nentries, run, tresW, unctX, unctyW);
     TGraphErrors *g2 = new TGraphErrors(nentries, run, tresH, unctX, unctyH);
+    TGraphErrors *g3 = new TGraphErrors(nentries, run, tresA, unctX, unctyA);
 
     TCanvas *c = new TCanvas( "c", "c", 2119, 33, 800, 700 );
     c->SetHighLightColor(2);
@@ -82,25 +91,33 @@ int main (int argc, char **argv) {
     g2->SetMarkerColor(kOrange-3);
     g1->SetLineColor(kAzure);
     g1->SetMarkerColor(kAzure);
-    g2->SetMarkerStyle(kFullSquare);
+    g3->SetLineColor(kGreen+2);
+    g3->SetMarkerColor(kGreen+2);
+
     g1->SetMarkerStyle(kFullCircle);
-    g2->SetMarkerSize(1.5);
+    g2->SetMarkerStyle(kFullSquare);
+    g3->SetMarkerStyle(kFullTriangleDown);
     g1->SetMarkerSize(1.5);
+    g2->SetMarkerSize(1.5);
+    g3->SetMarkerSize(1.5);
     g1->SetLineWidth(2.);
     g2->SetLineWidth(2.);
+    g3->SetLineWidth(2.);
     
     TLegend *leg = new TLegend(0.25, 0.2, 0.75, 0.4, NULL, "brNDC");
     leg->SetLineColor(kWhite);
     leg->SetFillColor(kWhite);
     leg->SetTextSize(0.04);
-    leg->AddEntry(g1, "Weighted Energy Calculation", "lep");
-    leg->AddEntry(g2, "Highest Energy Calculation", "lep");
+    leg->AddEntry(g1, "Weighted Energy", "lep");
+    leg->AddEntry(g2, "Highest Energy", "lep");
+    leg->AddEntry(g3, "Unweighted Average", "lep");
 
     g2->Draw("AP");
     g1->Draw("P same");
+    g3->Draw("P same");
     leg->Draw();
 
     c->SaveAs(argv[1]);
 
-    delete run, tresW, tresH, unctX, unctyW, unctyH, g1, g2, c, leg;
+    delete run, tresW, tresH, tresA, unctX, unctyW, unctyH, unctyA, g1, g2, c, leg;
 }

@@ -5,7 +5,6 @@
 #include "TH1F.h"
 #include "TCanvas.h"
 #include "TF1.h"
-#include "TGraphErrors.h"
 #include "TStyle.h"
 #include "TMath.h"
 #include "TLatex.h"
@@ -121,18 +120,21 @@ int main (int argc, char **argv) {
     float integral[NROWS][NCOLS];
     unsigned int QualityBit[NROWS][NCOLS];
 
-    float deltat[NROWS][NCOLS];
-
     tree->SetBranchAddress("tgausroot", &time_gausfit);
     tree->SetBranchAddress("Int", &integral);
     tree->SetBranchAddress("QualityBit", &QualityBit);
 
     // Weighted Delta t
     TH1F *DtWI[MAXPIXELS];
-    for (int a = 0; a < MAXPIXELS; a++)
+    // Arithmetic average (unweighted) Delta t
+    TH1F *DtAI[MAXPIXELS];
+
+    for (int a = 0; a < MAXPIXELS; a++) {
         DtWI[a] = new TH1F(("Dt_Int_Weight" + std::to_string(a)).c_str(),
                               "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
-
+        DtAI[a] = new TH1F(("Dt_Int_Average" + std::to_string(a)).c_str(),
+                              "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
+    }
 
     /* Lenient Configuration - event considered as long as no pulse channel saturates */
     Long64_t nentries = tree->GetEntries();
@@ -148,34 +150,51 @@ int main (int argc, char **argv) {
                     skip = true;
         if (skip)
             continue;
-    
+
+        float deltat[NROWS][NCOLS];
+        
         bool eventful = false;
-        for (int a = STARTy; a < ENDy; a++)
-            for (int b = STARTx; b < ENDx; b++) {
+        for (int a = 0; a < NROWS; a++)
+            for (int b = 0; b < NCOLS; b++) {
+                // Anulls non pixel channels
+                if (a < STARTy || a >= ENDy || b < STARTx || b >= ENDx) {
+                    integral[a][b] = 0;
+                    deltat[a][b] = 0;
+                }
                 // If the pulse and reference pulse are good, save everything
-                if (!(QualityBit[a][b] || QualityBit[a][REFERENCEx])) {
+                else if (!(QualityBit[a][b] || QualityBit[a][REFERENCEx])) {
                     deltat[a][b] = time_gausfit[a][b] - time_gausfit[a][REFERENCEx];
                     eventful = true;
                 }
                 // Else if not a good pulse set weight to 0 to avoid using it
-                else
+                else {
                     integral[a][b] = 0;
+                    deltat[a][b] = 0;
+                }
             }
 
         // Find center point (to omit noisy pixel)
         float coords[2] = {0, 0};
         center(integral, coords, QualityBit);
 
-        if (eventful && (coords[0] != 9. && coords[1] != 15.)) {
+        if (eventful && !(coords[0] == 9. && coords[1] == 15.)) {
             // Sort delta T array by integral weighting
             float *int1D = (float *) &integral, *dt1D = (float *) &deltat;
             sort(int1D, dt1D);
             // Fill weighted Delta t measurements, do calculation for n=[1,MAXPIXELS] pixels
-            float sumI = 0, tot_dtI = 0;
+            float sumI = 0, tot_dtW = 0, tot_dtA = 0; int numP = 0;
             for (int pixels = 0; pixels < MAXPIXELS; pixels++) {
+                // if (event == 1866) std::cout << int1D[pixels] << endl;
                 sumI += int1D[pixels];
-                tot_dtI += int1D[pixels] * dt1D[pixels];
-                DtWI[pixels]->Fill(tot_dtI / sumI);
+                tot_dtW += int1D[pixels] * dt1D[pixels];
+                if (dt1D[pixels]) {
+                    tot_dtA += dt1D[pixels];
+                    numP++;
+                }
+                if (sumI)
+                    DtWI[pixels]->Fill(tot_dtW / sumI);
+                if (numP)
+                    DtAI[pixels]->Fill(tot_dtA / numP);
             }
         }
 
@@ -189,17 +208,26 @@ int main (int argc, char **argv) {
     // Save results in root file
     TFile *out = new TFile(outputname.c_str(), "RECREATE");
 
-    float sigmat[MAXPIXELS];
+    float sigmatW[MAXPIXELS];
+    float errorsW[MAXPIXELS];
+    float sigmatA[MAXPIXELS];
+    float errorsA[MAXPIXELS];
     float num[MAXPIXELS];
-    float errors[MAXPIXELS];
 
     // Fit weighted and high intensity Delta t
     for (int a = 0; a < MAXPIXELS; a++) {
         gaussian->SetParameters(DtWI[a]->GetEntries()/3, DtWI[a]->GetMean(), DtWI[a]->GetRMS());
         DtWI[a]->Fit(gaussian, "LMQR");
         DtWI[a]->Write();
-        sigmat[a] = gaussian->GetParameter(2);
-        errors[a] = gaussian->GetParError(2);
+        sigmatW[a] = gaussian->GetParameter(2);
+        errorsW[a] = gaussian->GetParError(2);
+
+        gaussian->SetParameters(DtAI[a]->GetEntries()/3, DtAI[a]->GetMean(), DtAI[a]->GetRMS());
+        DtAI[a]->Fit(gaussian, "LMQR");
+        DtAI[a]->Write();
+        sigmatA[a] = gaussian->GetParameter(2);
+        errorsA[a] = gaussian->GetParError(2);
+
         num[a] = a + 1;
         // Set smaller range
         if (a == 1)
@@ -208,24 +236,32 @@ int main (int argc, char **argv) {
 
     // Make time resolution by number of pixels graph and fit it
     // with an inverse root function
-    TH1F *graph = new TH1F("Graph", ";Number of Pixels (N); Time Resolution [ps]", MAXPIXELS, 0.5, MAXPIXELS+.5);
+    TH1F *graphW = new TH1F("Weighted", ";Number of Pixels (N); Time Resolution [ps]", MAXPIXELS, 0.5, MAXPIXELS+.5);
+    TH1F *graphA = new TH1F("Averaged", ";Number of Pixels (N); Time Resolution [ps]", MAXPIXELS, 0.5, MAXPIXELS+.5);
+
     for (int a = 0; a < MAXPIXELS; a++) {
-        graph->SetBinContent(a+1, 1000*sigmat[a]);
-        graph->SetBinError(a+1, 1000*errors[a]);
+        graphW->SetBinContent(a+1, 1000*sigmatW[a]);
+        graphW->SetBinError(a+1, 1000*errorsW[a]);
+        graphA->SetBinContent(a+1, 1000*sigmatA[a]);
+        graphA->SetBinError(a+1, 1000*errorsA[a]);
     }
 
-    // TGraphErrors *graph = new TGraphErrors(MAXPIXELS, num, sigmat, 0, errors);
     
     // TF1 *invroot = new TF1("invroot", "[0]/TMath::Sqrt(x-[1])+[2]", 1, MAXPIXELS);
-    TF1 *invroot = new TF1("invroot", "[0]/TMath::Sqrt(x)+[1]", 1, MAXPIXELS);
-    invroot->SetParLimits(1, 0, 100);
+    TF1 *invrootW = new TF1("invroot_weight", "[0]/TMath::Sqrt(x)+[1]", 1, 4);
+    TF1 *invrootA = new TF1("invroot_average", "[0]/TMath::Sqrt(x)+[1]", 1, 4);
+    invrootW->SetParLimits(1, 0, 100);
+    invrootA->SetParLimits(1, 0, 100);
     // TF1 *power = new TF1("power", "[0]*TMath::Power(x, [1])+[2]", 1, MAXPIXELS);
 
-    graph->Fit(invroot, "MNQR");
+    graphW->Fit(invrootW, "MNQR");
+    graphA->Fit(invrootA, "MNQR");
     // graph->Fit(power, "MNQR");
 
-    graph->Write();
-    invroot->Write();
+    graphW->Write();
+    invrootW->Write();
+    graphA->Write();
+    invrootA->Write();
     // power->Write();
 
 // Omit Saving with NOOUTPUT FLAG
@@ -236,51 +272,56 @@ int main (int argc, char **argv) {
     gStyle->SetErrorX(0);
 
     // Set up canvas
-    // TCanvas *c = new TCanvas("c", "c", 800, 600);
     TCanvas *c = new TCanvas( "c", "c", 2119, 33, 800, 700 );
     c->SetTopMargin(0.06);
     c->SetBottomMargin(0.12);
 
-    graph->GetXaxis()->SetTitleSize(.06);
-    graph->GetXaxis()->SetTitleOffset(.8);
-    graph->GetYaxis()->SetTitleSize(.06);
-    graph->GetYaxis()->SetTitleOffset(.75);
-    graph->SetMarkerStyle(20);
-    graph->SetMarkerSize(1.);
-    graph->SetLineWidth(2.);
-    graph->SetLineColor(kBlack);
-
-    graph->Draw();
-    // graph2->Draw("APE*");
-    
-    invroot->SetLineColor(kRed);
-    // power->SetLineColor(kGreen);
-    invroot->Draw("same");
-    // power->Draw("same");
+    graphA->GetXaxis()->SetTitleSize(.06);      graphW->GetXaxis()->SetTitleSize(.06);
+    graphA->GetXaxis()->SetTitleOffset(.8);     graphW->GetXaxis()->SetTitleOffset(.8);
+    graphA->GetYaxis()->SetTitleSize(.06);      graphW->GetYaxis()->SetTitleSize(.06);
+    graphA->GetYaxis()->SetTitleOffset(.75);    graphW->GetYaxis()->SetTitleOffset(.75);
+    graphA->SetMarkerStyle(20);                 graphW->SetMarkerStyle(20);
+    graphA->SetMarkerSize(1.);                  graphW->SetMarkerSize(1.);
+    graphA->SetLineWidth(2.);                   graphW->SetLineWidth(2.);
+    graphA->SetLineColor(kBlack);               graphW->SetLineColor(kBlack);
 
     TLatex *tex = new TLatex();
     tex->SetNDC();
     tex->SetTextSize(0.06);
 
+    graphA->Draw();
+    invrootA->Draw("same");
+
     tex->DrawLatex(.35, .65,
-        Form("#frac{(%2.1f#pm%2.1f)}{#sqrt{N}} + (%2.1f#pm%2.1f)", invroot->GetParameter(0),
-             invroot->GetParError(0), invroot->GetParameter(1), invroot->GetParError(1)
+        Form("#frac{(%2.1f#pm%2.1f)}{#sqrt{N}} + (%2.1f#pm%2.1f)", invrootA->GetParameter(0),
+             invrootA->GetParError(0), invrootA->GetParameter(1), invrootA->GetParError(1)
              ));
-    tex->DrawLatex(.35, .80, Form("#chi^{2}/2:  %2.2f", invroot->GetChisquare()));
+    tex->DrawLatex(.35, .80, Form("#chi^{2}/2:  %2.2f", invrootA->GetChisquare()));
 
     c->Update();
+    c->SaveAs((outprefix + "_Dt_P_Av.pdf").c_str());
 
+    graphW->Draw();
+    invrootW->Draw("same");
+
+    tex->DrawLatex(.35, .65,
+        Form("#frac{(%2.1f#pm%2.1f)}{#sqrt{N}} + (%2.1f#pm%2.1f)", invrootW->GetParameter(0),
+             invrootW->GetParError(0), invrootW->GetParameter(1), invrootW->GetParError(1)
+             ));
+    tex->DrawLatex(.35, .80, Form("#chi^{2}/2:  %2.2f", invrootW->GetChisquare()));
+
+    c->Update();
     c->SaveAs((outprefix + "_Dt_IWP.pdf").c_str());
-    // c->SaveAs((outprefix + "_Dt_IWP.png").c_str());
 
     delete c, tex;
 
 #endif
 
-    delete gaussian, invroot;
+    delete gaussian, invrootW, invrootA;
     for (int a = 0; a < MAXPIXELS; a++)
-        delete DtWI[a];
-    delete graph;
+        delete DtWI[a], DtAI[a];
+
+    delete graphW, graphA;
 
     out->Close();
     inputfile->Close();

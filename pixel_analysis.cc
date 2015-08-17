@@ -89,11 +89,13 @@ int main (int argc, char **argv) {
     tree->SetBranchAddress("QualityBit", &QualityBit);
 
     /******************************* HISTOGRAMS *******************************/
-    // only fit parameters
-    //gStyle->SetOptFit(10);
-    //gStyle->SetOptStat(11);
+#ifdef NOOUTPUT
+    gStyle->SetOptFit(10);
+    gStyle->SetOptStat(11);
+#else
     gStyle->SetOptFit(0);
     gStyle->SetOptStat(0);
+#endif
 
     // Make a histogram for each pixel to calculate above variables
     TH1F *Amp[NROWS][NCOLS];
@@ -123,6 +125,9 @@ int main (int argc, char **argv) {
     // Highest amplitude/integral Delta t
     TH1F *DtHA = new TH1F("Dt_HI_Amp", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
     TH1F *DtHI = new TH1F("Dt_HI_Int", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
+    // Arithmetic (no weighting) mean Delta t
+    TH1F *Dtav = new TH1F("Dt_Average", "; #Delta t [ns]; Number of Events", 45, -4.5, -3);
+
 
     /**************************** LOOP OVER EVENTS ****************************/
 
@@ -145,6 +150,7 @@ int main (int argc, char **argv) {
         float sumI = 0, tot_dtI = 0;
         float highA = 0, timeA = 0;
         float highI = 0, timeI = 0;
+        float tot_dt = 0; int tot_num = 0;
 
         for (int a = STARTy; a < ENDy; a++)
             for (int b = STARTx; b < ENDx; b++) {
@@ -163,6 +169,9 @@ int main (int argc, char **argv) {
                     // High intensity Delta t calculation
                     if (highA < amplitude[a][b]) {highA = amplitude[a][b]; timeA = dt;}
                     if (highI < integral[a][b]) {highI = integral[a][b]; timeI = dt;}
+                    // Unweighted averate Delta t calculation
+                    tot_dt += dt;
+                    tot_num += 1;
                 }
                 // If there is a pulse but timing is compromised save only amp and int
                 else if (!(QualityBit[a][b] & 0b0010000)) {
@@ -181,7 +190,7 @@ int main (int argc, char **argv) {
         // Fill highest intensity Delta t measurement
         float coords[2] = {0, 0};
         center(amplitude, coords, QualityBit);
-        if (coords[0] != 9. && coords[1] != 15.) {
+        if (!(coords[0] == 9. && coords[1] == 15.)) {
             AmplitudeCenter->Fill(coords[0], coords[1]);
             if (sumA)
                 DtWA->Fill(tot_dtA / sumA);
@@ -189,12 +198,15 @@ int main (int argc, char **argv) {
                 DtHA->Fill(timeA);
         }
         center(integral, coords, QualityBit);
-        if (coords[0] != 9. && coords[1] != 15.) {
+        if (!(coords[0] == 9. && coords[1] == 15.)) {
             IntegralCenter->Fill(coords[0], coords[1]);
             if (sumI)
                 DtWI->Fill(tot_dtI / sumI);
             if (highI)
                 DtHI->Fill(timeI);
+            if (tot_num)
+                Dtav->Fill(tot_dt / tot_num);
+
         }
     }
 
@@ -233,6 +245,7 @@ int main (int argc, char **argv) {
             delete Amp[a][b], Int[a][b], Tres[a][b];
         }
     // Fit weighted and high intensity Delta t
+    gaussian->SetRange(-3.9, -3.6);
     gaussian->SetParameters(DtWA->GetEntries()/3, DtWA->GetMean(), DtWA->GetRMS());
     DtWA->Fit(gaussian, "LMQR");
     DtWA->Write();
@@ -245,6 +258,9 @@ int main (int argc, char **argv) {
     gaussian->SetParameters(DtHI->GetEntries()/3, DtHI->GetMean(), DtHI->GetRMS());
     DtHI->Fit(gaussian, "LMQR");
     DtHI->Write();
+    gaussian->SetParameters(Dtav->GetEntries()/3, Dtav->GetMean(), Dtav->GetRMS());
+    Dtav->Fit(gaussian, "LMQR");
+    Dtav->Write();
 
     delete gaussian;
 
@@ -284,6 +300,13 @@ int main (int argc, char **argv) {
     c->SaveAs((outprefix + "_DtHI.gif").c_str());
     c->SaveAs((outprefix + "_DtHI.pdf").c_str());
     delete DtHA, DtHI;
+    c->Clear()
+
+    /********************************* No Weight Time **********************************/
+    Dtav->Draw();
+    c->SaveAs((outprefix + "_Dtav.gif").c_str());
+    c->SaveAs((outprefix + "_Dtav.pdf").c_str());
+    delete Dtav;
     c->Clear();
 
     /************************************ Amplitude ************************************/
@@ -374,6 +397,7 @@ int main (int argc, char **argv) {
     delete AmplitudeCenter, IntegralCenter;
     delete DtWA, DtWI;
     delete DtHA, DtHI;
+    delete Dtav;
 
 #endif
 

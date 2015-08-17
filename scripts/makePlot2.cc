@@ -25,7 +25,7 @@ using namespace std;
  */
 int main (int argc, char **argv) {
     if (argc < 3)
-        cout << "usage: get_properties outfilename {infiles.root}" << endl;
+        cout << "usage: makePlot2 outfilename {infiles.root}" << endl;
 
     int nentries = (argc - 2) / 2;
     float *run    = new float[nentries];

@@ -60,18 +60,18 @@ if __name__ == "__main__":
         Centers(9.23891, 7.82817, 12, 20), # 25
         Centers(9.10313, 6.97577, 12, 19), # 26
         Centers(9.0287 , 6.29648, 12, 18), # 27
-        Centers(8.90299, 5.56551, 12, 17), # 28
-        Centers(8.86388, 4.49061, 12, 16), # 29
+        # Centers(8.90299, 5.56551, 12, 17), # 28
+        # Centers(8.86388, 4.49061, 12, 16), # 29
         Centers(9.36233, 9.63089, 12, 22), # 30
         Centers(9.25   , 8.6491 , 12, 21), # 31
         Centers(9.15665, 7.77052, 12, 20), # 32
         Centers(9.21107, 6.94159, 12, 19), # 33
         Centers(8.99333, 6.12369, 12, 18), # 34
-        Centers(8.91897, 5.53766, 12, 17), # 35
-        Centers(8.77638, 4.6662 , 12, 16), # 36
-        Centers(9.25372, 11.3672, 12, 24), # 37
-        Centers(9.09835, 12.8532, 12, 26), # 38
-        Centers(9.05256, 13.5172, 12, 27), # 39
+        # Centers(8.91897, 5.53766, 12, 17), # 35
+        # Centers(8.77638, 4.6662 , 12, 16), # 36
+        # Centers(9.25372, 11.3672, 12, 24), # 37
+        # Centers(9.09835, 12.8532, 12, 26), # 38
+        # Centers(9.05256, 13.5172, 12, 27), # 39
         # Centers(10.3491, 9.67175, 10, 22), # 40
         # Centers(11.6273, 9.60224,  8, 22), # 41
         # Centers(12.7906, 9.56366,  6, 22), # 42
@@ -118,20 +118,20 @@ if __name__ == "__main__":
     # histogramAx.Fit(gaussian3, "MQR")
     # histogramAx.Draw()
 
-    # c1.SaveAs("outputs/residualsAx.gif")
-    # c1.SaveAs("outputs/residualsAx.pdf")
+    # c1.SaveAs("residualsAx.gif")
+    # c1.SaveAs("residualsAx.pdf")
 
     # gaussian2.SetParameters(histogramAy.GetEntries()/3, histogramAy.GetMean(), histogramAy.GetRMS())
     # histogramAy.Fit(gaussian2, "LMQR")
     # histogramAy.Draw()
-    # c1.SaveAs("outputs/residualsAy.gif")
-    # c1.SaveAs("outputs/residualsAy.pdf")
+    # c1.SaveAs("residualsAy.gif")
+    # c1.SaveAs("residualsAy.pdf")
 
     # gaussian3.SetParameters(histogramIx.GetEntries()/3, histogramIx.GetMean(), histogramIx.GetRMS())
     # histogramIx.Fit(gaussian3, "MQR")
     # histogramIx.Draw()
-    # c1.SaveAs("outputs/residualsIx.gif")
-    # c1.SaveAs("outputs/residualsIx.pdf")
+    # c1.SaveAs("residualsIx.gif")
+    # c1.SaveAs("residualsIx.pdf")
 
     gaussian1.SetParameters(histogramIx.GetEntries()/3, histogramIx.GetMean(), histogramIx.GetRMS())
     histogramIy.Fit(gaussian1, "LMQR")
@@ -142,6 +142,6 @@ if __name__ == "__main__":
 
     histogramIy.Draw()
     tex.DrawLatexNDC(.65, .80, "#sigma: %2.1f mm" % gaussian1.GetParameter(2))
-    c1.SaveAs("outputs/residualsIy.gif")
-    c1.SaveAs("outputs/residualsIy.pdf")
+    c1.SaveAs("residualsIy.gif")
+    c1.SaveAs("residualsIy.pdf")
  

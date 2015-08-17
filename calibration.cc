@@ -60,7 +60,7 @@ int main (int argc, char **argv) {
     }
     // terminate if arguments are not correct
     else {
-        std::cout << "usage: correction inputfile.root inputfile2.root outputname.root" << std::endl;
+        std::cout << "usage: calibration inputfile.root inputfile2.root outputname.root" << std::endl;
         return 0;
     }
 
